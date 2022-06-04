@@ -8,17 +8,23 @@ FROM theteamultroid/ultroid:main
 # set timezone
 ENV TZ=Asia/Kolkata
 
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
-    # cloning the repo and installing requirements.
-    && git clone https://github.com/TeamUltroid/Ultroid.git /root/TeamUltroid/ \
-    && pip3 install --no-cache-dir -r root/TeamUltroid/requirements.txt \
-    && pip3 install av --no-binary av
+ARG REPO=https://github.com/TeamUltroid/Ultroid.git
+ARG DIR=/root/TeamUltroid
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# cloning the repo and installing requirements.
+RUN if [ $BRANCH ]; then git clone -b $BRANCH $REPO $DIR; else git clone $REPO $DIR; fi
+RUN pip3 install --no-cache-dir -r $DIR/requirements.txt && pip3 install av --no-binary av
 
 # Railway's banned dependency
 RUN if [ ! $RAILWAY_STATIC_URL ]; then pip3 install --no-cache-dir yt-dlp; fi
 
-# changing workdir
-WORKDIR /root/TeamUltroid/
+# Okteto CLI
+RUN curl https://get.okteto.com -sSfL | sh
 
-# start the bot
+# changing workdir
+WORKDIR $DIR
+
+# start the bot.
 CMD ["bash", "startup"]
